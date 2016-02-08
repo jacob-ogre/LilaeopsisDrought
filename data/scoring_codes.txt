@@ -1,0 +1,9 @@
+Each day, each bin gets scored according to the plug's apparent health:
+   GR for fully green or more than half yellow;
+   YE for half yellow to all yellow;
+   BR for yellow to half brown;
+   D for all brown (dead).
+
+
+And some other notes...
+    The experimental design was to assign each of 40 bins to two treatments: high vs. low leaf density (random effect) and the extent of drydown each rep would face before watering started again. The experiment started with all 40 reps fully watered, then water was withheld from each rep until it reached the predetermined critical point; on the day of criticality, saturated waterings began, and continued for 15 days (the end for each replicate, hence staggered endings).

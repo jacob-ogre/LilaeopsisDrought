@@ -1,0 +1,15 @@
+Package: LilaeopsisDrought
+Type: Package
+Title: Analyses of Lilaeopsis Drought Project
+Version: 0.1.0
+Authors@R: person("Jacob", "Malcom", email = "jacob.w.malcom@gmail.com",
+                  role = c("aut", "cre"))
+Description: In 2007 and 2008, we (J. Malcom, A. Pock [Malcom], and W. Radke)
+    did a series of observational studies and greenhouse + transplanting experiments
+    to evaluate the factor contributing to the drought tolerance and resilience
+    of the ESA-listed plant, Lilaeopsis schaffneriana var. recurva, in SE Arizona.
+    These scripts capture the analysis (and plotting) of the data.
+License: GPL2
+LazyData: TRUE
+Imports:
+RoxygenNote: 5.0.1
