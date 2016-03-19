@@ -1,0 +1,26 @@
+---
+title: "Supporting Analyses for Lilaeopsis Drought Ecology"
+author: "Jacob Malcom, Anna Malcom, and William Radke"
+output: word_document
+---
+
+# Overview
+This document captures analyses and observations that are not central to the results of the paper, _Water (or the Lack Thereof), Management, and Conservation of an Endangered Desert Wetland Obligate,_ Lilaeopsis schaffneriana subsp. recurva. That is, during data processing we made observations that are informative but which may be distracting if included in the primary code.
+
+All of the data was read from Excel files using readxl and prepped for analysis in `prep_data.R`. Code for replicating the results (and tables and figures) of the main paper is found in `main_analyses.R`.
+
+```{r, echo = TRUE, warning = FALSE, error = FALSE, message = FALSE}
+library(dplyr)
+library(FactoMineR)
+library(ggplot2)
+library(ggthemes)
+library(pscl)
+
+load("data/field_dat.Rdata")
+```
+
+# Lilaeopsis presence, absence, and abundance
+
+## Forest canopy PCA
+
+We measured forest canopy in five places above or around each sample location along Leslie Creek. Because 
