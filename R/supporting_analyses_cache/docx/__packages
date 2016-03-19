@@ -1,0 +1,11 @@
+base
+dplyr
+ggplot2
+ggthemes
+readxl
+lubridate
+FactoMineR
+MASS
+lattice
+pscl
+AICcmodavg

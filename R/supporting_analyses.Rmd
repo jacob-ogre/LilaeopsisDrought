@@ -16,11 +16,92 @@ library(ggplot2)
 library(ggthemes)
 library(pscl)
 
-load("data/field_dat.Rdata")
+load("../data/field_dat.Rdata")
+
+knitr::opts_chunk$set(dpi = 300)
 ```
 
 # Lilaeopsis presence, absence, and abundance
 
 ## Forest canopy PCA
 
-We measured forest canopy in five places above or around each sample location along Leslie Creek. Because 
+We measured forest canopy openness in five places above or around each sample location along Leslie Creek. We performed a PCA to evaluate the extent to which forest canopy variance was shared.
+
+```{r, echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, results = 'asis', caption = 'Statistics for top five principal components of tree canopy openness.'}
+# cor(field_dat[,7:11])
+can_pca <- PCA(field_dat[,7:11], graph = FALSE)
+knitr::kable(can_pca$eig)
+# PCs 1 & 2 account for 58% of variance, so will use those
+```
+
+```{r fig-1, fig.height = 5, fig.cap = "**Biplot of the five riparian canopy measurements.** We used PCs 1 and 2 in some models because they account for 58% of the variance.", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+knitr::opts_chunk$set(dpi = 300)
+plot.PCA(can_pca, choix = "var", col.var = "gray50", title = "")
+```
+
+The loadings on the first 1-2 PCs are not very strong, but they are sufficient for removing three of five variables. In fact, a basic model using just the original canopy measurements is substantially less parsimonius than one using the first two PCs:
+
+```{r, echo = TRUE, message = TRUE, warning = TRUE, error = TRUE}
+mod6 <- zeroinfl(LSRD ~ perp45 + perp135 + para45 + para135 + def90,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(mod6)
+AICc(mod6)
+
+mod7 <- zeroinfl(LSRD ~ canopy_PC1 + canopy_PC2,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(mod7)
+AICc(mod7)
+```
+
+## Distribution of _Lilaeopsis_ densities
+
+We need to see the distribution of densities to choose the best way to model the relationship to the predictor variables.
+
+```{r fig-2, fig.height = 3, fig.width = 3, fig.cap = "**Distribution of _Lilaeopsis_ densities.** Many sampled points have no _Lilaeopsis_.", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+qplot(data = field_dat, x = LSRD, geom = "histogram") + theme_hc()
+```
+
+Given this distribution we could either (a) model the presence/absence separately, e.g., using a binomial model and a count [neg. binomial or Poisson] model; or (b) model as a zero-inflated count mixture model. We chose the latter option, with a caveat. 
+
+## _Lilaeopsis_ density and potential herbaceous competitors
+
+The zero-inflated model caveat is that keeping the plant competitors in the zero-inflated model did not work:
+
+```{r error = TRUE, warning = TRUE, message = TRUE}
+model <- zeroinfl(LSRD ~ Competitor, data = field_dat, dist = "negbin", EM = TRUE)
+```
+
+We next checked if _Lilaeopsis_ density covaried with competitors; if not, then we can safely drop competitor from the models. 
+
+```{r fig-3, fig.height = 3, fig.cap = "**The distribution of _Lilaeopsis_ densities did not covary strongly with any of the competitor species.** 'POA' = grasses (Poaceae), 'RNA' = _Rorippa nasturtium-aquaticum_; H = high, M = medium, L = low competitor density.", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+ggplot(data = field_dat, aes(x = Competitor, y = LSRD)) +
+    geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
+    geom_jitter(alpha = 0.4, size = 4, width = 0.2) +
+    theme_hc()
+```
+
+## Soil moisture as a function of distance from the creek...
+
+We expect that soil moisture will be higher closer to the edge of the creek, so the distance category and soil moisture may be redundant.
+
+```{r fig-4, fig.height = 3, fig.width = 3, fig.cap = "**As expected, soil moisture drops as the distance from the edge of the creek increases.** However, we considered models with both soil moisture and distance class in the predictor variable set because the moisture of the near- and mid-distance classes overlaps extensively.", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+ggplot(data = field_dat, aes(x = Distance, y = Soilmoist)) + 
+    geom_boxplot() +
+    geom_jitter(size = 4, alpha = 0.4, width = 0.2) +
+    labs(x = "Distance from creek",
+         y = "Soil moisture (percent)") +
+    theme_hc()
+```
+
+## ...and _Lilaeopsis_ leaf density as as a function of moisture
+
+```{r fig-5, fig.height = 3, fig.width = 3, fig.cap = "**Even though soil moisture covaries with distance from the creek, and leaf density is associated with distance, soil moisture is not well-correlated with leaf density.** This may indicate that a different limiting factor shapes leaf density once a particular moisture level is reached.", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+ggplot(data = pos_dens, aes(x = Soilmoist, y = LSRD)) +
+    geom_point(alpha = 0.4, size = 4) +
+    labs(x = "Soil moisture (percent)",
+         y = expression("Leaf count (25 "*cm^-2*")")) +
+    theme_hc()
+```
+
+
+

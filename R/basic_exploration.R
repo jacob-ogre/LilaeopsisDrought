@@ -23,6 +23,8 @@ library(lubridate)
 library(pscl)
 library(readxl)
 
+source("R/multiplot.R")
+
 ###############################################################################
 # Data import and setup
 ###############################################################################
@@ -49,7 +51,8 @@ head(dens_dat)
 # field_dat
 field_dat$Competitor <- as.factor(field_dat$Competitor)
 field_dat$Distance <- as.factor(field_dat$Distance)
-field_dat$LSRPA <- as.factor(field_dat$LSRPA)
+# field_dat$LSRPA <- as.factor(field_dat$LSRPA)
+# field_dat$LSRPA <- as.numeric(as.character(field_dat$LSRPA))
 
 # resil_dat
 resil_dat$Treat <- as.factor(resil_dat$Treat)
@@ -64,11 +67,13 @@ dens_dat$Density <- as.factor(dens_dat$Density)
 
 # Change some variable names for ease-of-use ------------------------------
 # field_dat
-names(field_dat)[7] <- "45perp"
-names(field_dat)[8] <- "135perp"
-names(field_dat)[9] <- "45para"
-names(field_dat)[10] <- "135para"
-names(field_dat)[11] <- "90deg"
+names(field_dat)[7] <- "perp45"
+names(field_dat)[8] <- "perp135"
+names(field_dat)[9] <- "para45"
+names(field_dat)[10] <- "para135"
+names(field_dat)[11] <- "deg90"
+
+save(field_dat, file="data/field_dat.RData")
 
 ###############################################################################
 # Analyses and plots: Field ecology
@@ -82,46 +87,133 @@ can_pca$eig
 field_dat$canopy_PC1 <- can_pca$ind$coord[,1]
 field_dat$canopy_PC2 <- can_pca$ind$coord[,2]
 
-# Some basic plots --------------------
-plot.PCA(can_pca, choix = "var", col.var = "gray50",
-         title = "Canopy Cover Biplot")
 
-# distribution of LSR densities
-qplot(data = field_dat, x = LSRD, geom = "histogram") + theme_hc()
-
-# soil moisture as a function of distance from the creek
-qplot(data = field_dat, x = Distance, y = Soilmoist, geom = "boxplot") + 
-theme_hc()
-
-# LSR density as a function of competitors
-ggplot(data = field_dat, aes(x = Competitor, y = LSRD)) +
-    geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
-    geom_jitter(alpha = 0.4, size = 4) +
-    theme_hc()
-
+###############################################################################
 # Now for the models -------------------
-mod1 <- zeroinfl(LSRD ~ Soilmoist + canopy_PC1 + canopy_PC2 + Centroid,
+# first the global model
+mod1 <- zeroinfl(LSRD ~ Distance + Soilmoist + canopy_PC1 + canopy_PC2 + Centroid,
                  data = field_dat, dist = "negbin", EM = TRUE)
 summary(mod1)
 AICc(mod1)
 
-mod2 <- zeroinfl(LSRD ~ Distance + Soilmoist + canopy_PC1 + canopy_PC2 + Centroid | Centroid,
-                 data = field_dat)
+# Two models dropping one of the soil moisture / creek distance measures
+mod2 <- zeroinfl(LSRD ~ Soilmoist + canopy_PC1 + canopy_PC2 + Centroid,
+                 data = field_dat, dist = "negbin", EM = TRUE)
 summary(mod2)
 AICc(mod2)
 
-mod3 <- zeroinfl(LSRD ~ Distance + Soilmoist + Canavg + Centroid | Centroid,
-                 data = field_dat)
+mod3 <- zeroinfl(LSRD ~ Distance + canopy_PC1 + canopy_PC2 + Centroid,
+                 data = field_dat, dist = "negbin", EM = TRUE)
 summary(mod3)
 AICc(mod3)
 
-mod2 <- zeroinfl(LSRD ~ Distance + Centroid,
+# two models for moisture and history, slightly different
+mod4 <- zeroinfl(LSRD ~ Distance + Centroid,
                  data = field_dat, dist = "negbin", EM = TRUE)
-summary(mod2)
+summary(mod4)
+AICc(mod4)
 
-mod22 <- zeroinfl(LSRD ~ Competitor,
+mod5 <- zeroinfl(LSRD ~ Soilmoist + Centroid,
                  data = field_dat, dist = "negbin", EM = TRUE)
-summary(mod22)
+summary(mod5)
+AICc(mod5)
+
+# a model ignoring our proxy for history
+mod6 <- zeroinfl(LSRD ~ Soilmoist + canopy_PC1 + canopy_PC2,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(mod6)
+AICc(mod6)
+
+# two models for just the canopy (unlikely)
+mod7 <- zeroinfl(LSRD ~ canopy_PC1 + canopy_PC2,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(mod7)
+AICc(mod7)
+
+# two models for just the canopy (unlikely)
+mod8 <- zeroinfl(LSRD ~ perp45 + perp135 + para45 + para135 + deg90,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(mod8)
+AICc(mod8)
+
+# Now to do the weighting and formal comparison
+candidates <- list(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8)
+AICc_table <- aictab(candidates)
+to_write_tab <- data.frame(AICc_table)
+write.table(to_write_tab,
+            file = "results/field_ecol_models_AICc.tsv",
+            sep = "\t",
+            quote = FALSE,
+            row.names = FALSE)
+
+###################################
+# a couple of post-hoc model considerations given the results above
+modP1 <- zeroinfl(LSRD ~ Soilmoist + Centroid | Centroid,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(modP1)
+AICc(modP1)
+
+# this is the model with the lowest AIC
+modP2 <- zeroinfl(LSRD ~ Distance + Centroid | Centroid,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(modP2)
+AICc(modP2)
+
+candidates <- list(mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, modP1, modP2)
+AICc_table <- aictab(candidates)
+to_write_tab <- data.frame(AICc_table)
+write.table(to_write_tab,
+            file = "results/field_ecol_models_AICc_withPost.tsv",
+            sep = "\t",
+            quote = FALSE,
+            row.names = FALSE)
+
+
+###############################################################################
+# And now for the plots for the paper, I think
+
+# First, presence/absence as a function of distance from the nearest centroid
+pdf(file = "results/Figure1_prob_occurrence.pdf", height = 6, width = 6)
+logi.hist.plot(field_dat$Centroid, 
+               field_dat$LSRPA, 
+               boxp = FALSE,
+               type = "hist",
+               xlabel = "Distance to patch centroid (m)",
+               ylabel = "Probability of presence",
+               ylabel2 = "(Absent)       Obs. Frequency       (Present)",
+               col = "lightsteelblue2")
+dev.off()
+
+# Second, LSR density as a function of distance to the creek
+all_dens <- ggplot(data = field_dat, aes(x = Distance, y = LSRD)) +
+                geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
+                geom_jitter(alpha = 0.4, size = 3, width = 0.4) +
+                labs(title = "All sampled sites",
+                     x = "Distance to edge of creek (m)",
+                     y = expression("Leaf count (25 "*cm^-2*")")) +
+                theme_hc()
+
+pos_dens <- field_dat[field_dat$LSRPA == 1, ]
+pos_dens <- ggplot(data = pos_dens, aes(x = Distance, y = LSRD)) +
+                geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
+                geom_jitter(alpha = 0.4, size = 4, width = 0.4) +
+                labs(title = "Present only",
+                     x = "Distance to edge of creek (m)",
+                     y = expression("Leaf count (25 "*cm^-2*")")) +
+                theme_hc()
+
+dist_moist <- ggplot(data = field_dat, aes(x = Distance, y = Soilmoist * 100)) +
+                  geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
+                  geom_jitter(alpha = 0.4, size = 4, width = 0.4) +
+                  labs(title = "Moisture vs. distance",
+                       x = "Distance to edge of creek (m)",
+                       y = "Soil moisture (percent)") +
+                  theme_hc()
+
+pdf(file = "results/Figure2_density.pdf", height = 6, width = 12)
+multiplot(all_dens, pos_dens, dist_moist, cols = 3)
+dev.off()
+
 
 ###############################################################################
 # Analyses and plots: Drought resistance and resilience
