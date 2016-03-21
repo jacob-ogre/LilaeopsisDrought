@@ -21,6 +21,8 @@ library(ggthemes)
 library(pscl)
 
 load("../data/field_dat.Rdata")
+load("../data/crit_dat.Rdata")
+load("../data/resil_dat.Rdata")
 
 knitr::opts_chunk$set(dpi = 300)
 knitr::opts_chunk$set(fig.height = 3)
@@ -127,7 +129,7 @@ We tested if the leaf density treatment of the resistance and resilience experim
 t.test(Leaf_count ~ Density, data = dens_dat)
 ```
 
-```{r fig-6, fig.height = 3, fig.width = 3, fig.cap = "**As expected, the density of _Lilaeopsis_ leaves was higher for the "high" treatment than for the the "low" treatment.**", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+```{r fig-6, fig.height = 3, fig.width = 3, fig.cap = "**As expected, the density of _Lilaeopsis_ leaves was higher for the _high_ treatment than for the the _low_ treatment.**", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
 apl <- ggplot(data=dens_dat, aes(x=Density, y=Leaf_count)) +
         geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
         geom_jitter(width = 0.2, alpha = 0.4, size = 4) +
@@ -137,21 +139,32 @@ apl <- ggplot(data=dens_dat, aes(x=Density, y=Leaf_count)) +
 apl
 ```
 
+## Resistance and resilence models
 
+For both the resistance and the resilience experiment data we evaluated additive and interaction models, and used Akaike's Information Criterion to select the best-supported model.
 
+```{r error = TRUE, warning = TRUE, message = TRUE}
+# Days-to-critical analysis:
+mod1 <- lm(Days_to_Crit ~ Treat + Density, data = crit_dat)
+mod2 <- lm(Days_to_Crit ~ Treat * Density, data = crit_dat)
 
+candidates <- list(mod1, mod2)
+AICc_table <- aictab(candidates)
+knitr::kable(data.frame(AICc_table))
+```
 
+```{r error = TRUE, warning = TRUE, message = TRUE}
+# Drought resilience analysis:
+mod1 <- lm(Condition ~ Density + Treat + Day, data = resil_dat)
+mod2 <- lm(Condition ~ Density * Day + Treat, data = resil_dat)
+mod3 <- lm(Condition ~ Density * Day * Treat, data = resil_dat)
 
+candidates <- list(mod1, mod2, mod3)
+AICc_table <- aictab(candidates)
+knitr::kable(data.frame(AICc_table))
+```
 
-
-
-
-
-
-
-
-
-
+Because of the overwhelming support for the interaction models for both the drought resistance and the drought resilience analyses, we simply use the parameter estimates from the interaction model rather than average the estimates.
 
 
 
