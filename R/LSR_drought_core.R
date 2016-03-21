@@ -21,9 +21,16 @@ library(ggplot2)
 library(ggthemes)
 library(lubridate)
 library(pscl)
-library(readxl)
 
 source("R/multiplot.R")
+
+###############################################################################
+# Load the data; prepped in data_prep.R
+###############################################################################
+load(file="data/field_dat.RData")
+load(file="data/dens_dat.RData")
+load(file="data/crit_dat.RData")
+load(file="data/resil_dat.RData")
 
 ###############################################################################
 # Analyses and plots: Field ecology
@@ -175,16 +182,17 @@ t.test(Leaf_count ~ Density, data = dens_dat)
 ###################################
 # Drought resistance
 # Days-to-critical analysis
-mod <- lm(Days_to_Crit ~ Treat + Density, data = crit_dat)
+sub_crit <- crit_dat[crit_dat$Treat != "Control", ]
+mod <- lm(Days_to_Crit ~ Treat + Density, data = sub_crit)
 summary(mod)
 hist(resid(mod))
 aov(mod)
 AICc(mod1)
 
-mod2 <- lm(Days_to_Crit ~ Treat * Density, data = crit_dat)
+mod2 <- lm(Days_to_Crit ~ Treat * Density, data = sub_crit)
 summary(mod2)
 hist(resid(mod2))
-aov(mod2)
+summary(aov(mod2))
 AICc(mod2)
 
 mod2_coef <- data.frame(summary(mod2)$coefficients)
@@ -192,11 +200,11 @@ write.table(mod2_coef,
             file = "results/resistance_coef_table.tsv")
 
 # Days-to-critical figure
-crit_panel <- ggplot(data = crit_dat, aes(x = Density, y = Days_to_Crit)) +
+crit_panel <- ggplot(data = sub_crit, aes(x = Density, y = Days_to_Crit)) +
                   geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
                   geom_jitter(alpha = 0.4, size = 4, width = 0.4, height = 0) +
-                  labs(x = "Leaf density treatment",
-                       y = "Time to critical level (days)") +
+                  labs(x = "\nLeaf density treatment",
+                       y = "Time to critical level (days)\n") +
                   facet_wrap(~Treat) +
                   theme_hc()
 crit_panel
@@ -208,17 +216,20 @@ dev.off()
 ###################################
 # Drought resilience
 # Analyze resilience
-mod <- lm(Condition ~ Density + Treat + Day, data = resil_dat)
+sub_resil <- resil_dat[resil_dat$Treat != "Control", ]
+mod <- lm(Condition ~ Density + Treat + Day, data = sub_resil)
 summary(mod)
+summary(aov(mod))
 hist(resid(mod))
 AICc(mod)
 
-mod2 <- lm(Condition ~ Density * Day + Treat, data = resil_dat)
+mod2 <- lm(Condition ~ Density * Day + Treat, data = sub_resil)
 summary(mod2)
+summary(aov(mod2))
 hist(resid(mod2))
 AICc(mod2)
 
-mod3 <- lm(Condition ~ Density * Day * Treat, data = resil_dat)
+mod3 <- lm(Condition ~ Density * Day * Treat, data = sub_resil)
 summary(mod3)
 aov(mod3)
 hist(resid(mod3))
@@ -229,7 +240,7 @@ write.table(mod3_coef,
             file = "results/resilience_coef_table.tsv")
 
 # Plot resilience
-resil_panel <- ggplot(data = resil_dat, aes(x = Day, y = Condition, colour = Density)) +
+resil_panel <- ggplot(data = sub_resil, aes(x = Day, y = Condition, colour = Density)) +
                    geom_smooth(method = "lm", alpha = 0.2) +
                    geom_jitter(alpha = 0.4, size = 2, width = 0.2, height = 0.2) +
                    scale_colour_brewer(palette = "Set1",

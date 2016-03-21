@@ -113,6 +113,18 @@ ggplot(data = pos_dens, aes(x = Soilmoist, y = LSRD)) +
 
 It's not clear why the density-distance-moisture relationship is not transitive, but that's what the data suggest.
 
+## Post hoc models
+
+After analyzing the eight _a priori_ models we considered two additional models. Post-2 had a substantially better fit than Model 4, the best model from the _a priori_ set.
+
+```{r echo = FALSE, error = FALSE, warning = FALSE, message = FALSE}
+# this is the model with the lowest AIC
+modP2 <- zeroinfl(LSRD ~ Distance + Centroid | Centroid,
+                 data = field_dat, dist = "negbin", EM = TRUE)
+summary(modP2)
+AICc(modP2)
+```
+
 --------
 
 # _Lilaeopsis_ drought resistance and resilience
@@ -151,17 +163,22 @@ mod2 <- lm(Days_to_Crit ~ Treat * Density, data = crit_dat)
 candidates <- list(mod1, mod2)
 AICc_table <- aictab(candidates)
 knitr::kable(data.frame(AICc_table))
+
+summary(mod2)
 ```
 
 ```{r error = TRUE, warning = TRUE, message = TRUE}
 # Drought resilience analysis:
-mod1 <- lm(Condition ~ Density + Treat + Day, data = resil_dat)
-mod2 <- lm(Condition ~ Density * Day + Treat, data = resil_dat)
-mod3 <- lm(Condition ~ Density * Day * Treat, data = resil_dat)
+sub_resil <- resil_dat[resil_dat$Treat != "Control", ]
+mod1 <- lm(Condition ~ Density + Treat + Day, data = sub_resil)
+mod2 <- lm(Condition ~ Density * Day + Treat, data = sub_resil)
+mod3 <- lm(Condition ~ Density * Day * Treat, data = sub_resil)
 
 candidates <- list(mod1, mod2, mod3)
 AICc_table <- aictab(candidates)
 knitr::kable(data.frame(AICc_table))
+
+summary(mod2)
 ```
 
 Because of the overwhelming support for the interaction models for both the drought resistance and the drought resilience analyses, we simply use the parameter estimates from the interaction model rather than average the estimates.
