@@ -66,6 +66,9 @@ crit_dat$Treat <- as.factor(crit_dat$Treat)
 crit_dat$Density <- as.factor(crit_dat$Density)
 
 # resil_dat
+resil_dat$Density <- ifelse(resil_dat$Density == "Hi",
+                            "High",
+                            "Low")
 resil_dat$Treat <- as.factor(resil_dat$Treat)
 resil_dat$Density <- as.factor(resil_dat$Density)
 
@@ -86,9 +89,11 @@ names(crit_dat)[5] <- "Resist_start"
 names(crit_dat)[6] <- "Critical_date"
 names(crit_dat)[7] <- "Resilience_end"
 
+
 save(field_dat, file="data/field_dat.RData")
 save(dens_dat, file="data/dens_dat.RData")
 save(crit_dat, file="data/crit_dat.RData")
+save(resil_dat, file="data/resil_dat.RData")
 
 ###############################################################################
 # Analyses and plots: Field ecology
@@ -252,7 +257,11 @@ hist(resid(mod2))
 aov(mod2)
 AICc(mod2)
 
-# Days-to-critical analysis
+mod2_coef <- data.frame(summary(mod2)$coefficients)
+write.table(mod2_coef, 
+            file = "results/resistance_coef_table.tsv")
+
+# Days-to-critical figure
 crit_panel <- ggplot(data = crit_dat, aes(x = Density, y = Days_to_Crit)) +
                   geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
                   geom_jitter(alpha = 0.4, size = 4, width = 0.4, height = 0) +
@@ -266,9 +275,45 @@ pdf(file = "results/Figure3_resist.pdf", height = 6, width = 6)
 crit_panel
 dev.off()
 
+###################################
+# Drought resilience
+# Analyze resilience
+mod <- lm(Condition ~ Density + Treat + Day, data = resil_dat)
+summary(mod)
+hist(resid(mod))
+AICc(mod)
 
+mod2 <- lm(Condition ~ Density * Day + Treat, data = resil_dat)
+summary(mod2)
+hist(resid(mod2))
+AICc(mod2)
 
+mod3 <- lm(Condition ~ Density * Day * Treat, data = resil_dat)
+summary(mod3)
+aov(mod3)
+hist(resid(mod3))
+AICc(mod3)
 
+mod3_coef <- data.frame(summary(mod3)$coefficients)
+write.table(mod3_coef, 
+            file = "results/resilience_coef_table.tsv")
+
+# Plot resilience
+resil_panel <- ggplot(data = resil_dat, aes(x = Day, y = Condition, colour = Density)) +
+                   geom_smooth(method = "lm", alpha = 0.2) +
+                   geom_jitter(alpha = 0.4, size = 2, width = 0.2, height = 0.2) +
+                   scale_colour_brewer(palette = "Set1",
+                                       guide = guide_legend(title = "Leaf density")) +
+                   labs(x = "Days post-critical",
+                        y = "Condition index\n") +
+                   facet_wrap(~Treat) +
+                   theme_hc() +
+                   theme(legend.position = "top" )
+resil_panel
+
+pdf(file = "results/Figure4_resilience.pdf", height = 6, width = 10)
+resil_panel
+dev.off()
 
 
 
