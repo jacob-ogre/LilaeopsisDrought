@@ -1,7 +1,11 @@
 ---
 title: "Supporting Analyses for Lilaeopsis Drought Ecology"
 author: "Jacob Malcom, Anna Malcom, and William Radke"
-output: word_document
+output: 
+    word_document:
+        fig_height: 5
+        fig_caption: true
+        reference_docx: '/Users/jacobmalcom/Repos/LilaeopsisDrought/results/supporting_analyses_template.docx'
 ---
 
 # Overview
@@ -19,6 +23,7 @@ library(pscl)
 load("../data/field_dat.Rdata")
 
 knitr::opts_chunk$set(dpi = 300)
+knitr::opts_chunk$set(fig.height = 3)
 ```
 
 # Lilaeopsis presence, absence, and abundance
@@ -35,7 +40,7 @@ knitr::kable(can_pca$eig)
 ```
 
 ```{r fig-1, fig.height = 5, fig.cap = "**Biplot of the five riparian canopy measurements.** We used PCs 1 and 2 in some models because they account for 58% of the variance.", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
-knitr::opts_chunk$set(dpi = 300)
+# knitr::opts_chunk$set(dpi = 300)
 plot.PCA(can_pca, choix = "var", col.var = "gray50", title = "")
 ```
 
@@ -44,12 +49,12 @@ The loadings on the first 1-2 PCs are not very strong, but they are sufficient f
 ```{r, echo = TRUE, message = TRUE, warning = TRUE, error = TRUE}
 mod6 <- zeroinfl(LSRD ~ perp45 + perp135 + para45 + para135 + def90,
                  data = field_dat, dist = "negbin", EM = TRUE)
-summary(mod6)
+# summary(mod6)
 AICc(mod6)
 
 mod7 <- zeroinfl(LSRD ~ canopy_PC1 + canopy_PC2,
                  data = field_dat, dist = "negbin", EM = TRUE)
-summary(mod7)
+# summary(mod7)
 AICc(mod7)
 ```
 
@@ -93,15 +98,62 @@ ggplot(data = field_dat, aes(x = Distance, y = Soilmoist)) +
     theme_hc()
 ```
 
-## ...and _Lilaeopsis_ leaf density as as a function of moisture
+## ...and _Lilaeopsis_ leaf density as a function of moisture
 
 ```{r fig-5, fig.height = 3, fig.width = 3, fig.cap = "**Even though soil moisture covaries with distance from the creek, and leaf density is associated with distance, soil moisture is not well-correlated with leaf density.** This may indicate that a different limiting factor shapes leaf density once a particular moisture level is reached.", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+pos_dens <- field_dat[field_dat$LSRPA == 1, ]
 ggplot(data = pos_dens, aes(x = Soilmoist, y = LSRD)) +
     geom_point(alpha = 0.4, size = 4) +
     labs(x = "Soil moisture (percent)",
          y = expression("Leaf count (25 "*cm^-2*")")) +
     theme_hc()
 ```
+
+It's not clear why the density-distance-moisture relationship is not transitive, but that's what the data suggest.
+
+--------
+
+# _Lilaeopsis_ drought resistance and resilience
+
+```{r echo = FALSE, error = FALSE, warning = FALSE, message = FALSE}
+load("../data/dens_dat.RData")
+```
+
+## Experimental leaf densities
+
+We tested if the leaf density treatment of the resistance and resilience experiments was significantly different.
+
+```{r error = TRUE, warning = TRUE, message = TRUE}
+t.test(Leaf_count ~ Density, data = dens_dat)
+```
+
+```{r fig-6, fig.height = 3, fig.width = 3, fig.cap = "**As expected, the density of _Lilaeopsis_ leaves was higher for the "high" treatment than for the the "low" treatment.**", echo = FALSE,  warning=FALSE, message=FALSE, cache=TRUE}
+apl <- ggplot(data=dens_dat, aes(x=Density, y=Leaf_count)) +
+        geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
+        geom_jitter(width = 0.2, alpha = 0.4, size = 4) +
+        labs(x="\nLeaf Density Treatment",
+             y=expression("Leaf count (25 "*cm^-2*")")) +
+        theme_hc()
+apl
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

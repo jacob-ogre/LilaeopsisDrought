@@ -37,33 +37,37 @@ dens_fil <- "data/resilience_leaf_density_data.xlsx"
 
 # Load the data ------------------------------
 field_dat <- read_excel(field_fil)
-resil_dat <- read_excel(resil_fil)
-crit_dat <- read_excel(crit_fil)
 dens_dat <- read_excel(dens_fil)
+crit_dat <- read_excel(crit_fil)
+resil_dat <- read_excel(resil_fil)
 
 # Take a look at the heads
 head(field_dat)
-head(resil_dat)
-head(crit_dat)
 head(dens_dat)
+head(crit_dat)
+head(resil_dat)
 
 # Set data types ------------------------------
 # field_dat
 field_dat$Competitor <- as.factor(field_dat$Competitor)
 field_dat$Distance <- as.factor(field_dat$Distance)
-# field_dat$LSRPA <- as.factor(field_dat$LSRPA)
-# field_dat$LSRPA <- as.numeric(as.character(field_dat$LSRPA))
+
+# dens_dat
+dens_dat$Density <- ifelse(dens_dat$Density == "Hi",
+                           "High",
+                           "Low")
+dens_dat$Density <- as.factor(dens_dat$Density)
+
+# crit_dat
+crit_dat$Density <- ifelse(crit_dat$Density == "H",
+                           "High",
+                           "Low")
+crit_dat$Treat <- as.factor(crit_dat$Treat)
+crit_dat$Density <- as.factor(crit_dat$Density)
 
 # resil_dat
 resil_dat$Treat <- as.factor(resil_dat$Treat)
 resil_dat$Density <- as.factor(resil_dat$Density)
-
-# crit_dat
-crit_dat$Treat <- as.factor(crit_dat$Treat)
-crit_dat$Density <- as.factor(crit_dat$Density)
-
-# dens_dat
-dens_dat$Density <- as.factor(dens_dat$Density)
 
 # Change some variable names for ease-of-use ------------------------------
 # field_dat
@@ -73,7 +77,18 @@ names(field_dat)[9] <- "para45"
 names(field_dat)[10] <- "para135"
 names(field_dat)[11] <- "deg90"
 
+# dens_dat
+names(dens_dat)[3] <- "Leaf_count"
+
+# crit_dat
+names(crit_dat)[4] <- "Days_to_Crit"
+names(crit_dat)[5] <- "Resist_start"
+names(crit_dat)[6] <- "Critical_date"
+names(crit_dat)[7] <- "Resilience_end"
+
 save(field_dat, file="data/field_dat.RData")
+save(dens_dat, file="data/dens_dat.RData")
+save(crit_dat, file="data/crit_dat.RData")
 
 ###############################################################################
 # Analyses and plots: Field ecology
@@ -220,14 +235,36 @@ dev.off()
 ###############################################################################
 
 # check the experimental leaf density factors
-apl <- ggplot(data=dens_dat, aes(x=Density, y=`Leaf count`)) +
-        geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
-        geom_jitter(width = 0.2, alpha = 0.4, size = 4) +
-        labs(x="\nLeaf Density Treatment",
-             y=expression("Leaf count (25 "*cm^-2*")")) +
-        theme_hc()
-apl
+t.test(Leaf_count ~ Density, data = dens_dat)
 
+###################################
+# Drought resistance
+# Days-to-critical analysis
+mod <- lm(Days_to_Crit ~ Treat + Density, data = crit_dat)
+summary(mod)
+hist(resid(mod))
+aov(mod)
+AICc(mod1)
+
+mod2 <- lm(Days_to_Crit ~ Treat * Density, data = crit_dat)
+summary(mod2)
+hist(resid(mod2))
+aov(mod2)
+AICc(mod2)
+
+# Days-to-critical analysis
+crit_panel <- ggplot(data = crit_dat, aes(x = Density, y = Days_to_Crit)) +
+                  geom_violin(fill = "lightsteelblue2", color = "lightsteelblue2") +
+                  geom_jitter(alpha = 0.4, size = 4, width = 0.4, height = 0) +
+                  labs(x = "Leaf density treatment",
+                       y = "Time to critical level (days)") +
+                  facet_wrap(~Treat) +
+                  theme_hc()
+crit_panel
+
+pdf(file = "results/Figure3_resist.pdf", height = 6, width = 6)
+crit_panel
+dev.off()
 
 
 
