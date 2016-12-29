@@ -1,4 +1,5 @@
-# Basic exploration of the data because it's been nine years.
+# Core analysis of the LSR drought experiments.
+#
 # Copyright (c) 2016 Jacob Malcom, jmalcom@defenders.org
 
 # This program is free software; you can redistribute it and/or modify
