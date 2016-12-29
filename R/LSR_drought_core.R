@@ -21,6 +21,7 @@ library(ggplot2)
 library(ggthemes)
 library(lubridate)
 library(pscl)
+library(popbio)
 
 source("R/multiplot.R")
 
@@ -131,8 +132,10 @@ write.table(to_write_tab,
 
 # First, presence/absence as a function of distance from the nearest centroid
 pdf(file = "results/Figure1_prob_occurrence.pdf", height = 6, width = 6)
-logi.hist.plot(field_dat$Centroid, 
-               field_dat$LSRPA, 
+logi.hist.plot(field_dat$Centroid,
+               field_dat$LSRPA,
+               logi.mod = 1,
+               rug = TRUE,
                boxp = FALSE,
                type = "hist",
                xlabel = "Distance to patch centroid (m)",
@@ -196,7 +199,7 @@ summary(aov(mod2))
 AICc(mod2)
 
 mod2_coef <- data.frame(summary(mod2)$coefficients)
-write.table(mod2_coef, 
+write.table(mod2_coef,
             file = "results/resistance_coef_table.tsv")
 
 # Days-to-critical figure
@@ -236,7 +239,7 @@ hist(resid(mod3))
 AICc(mod3)
 
 mod3_coef <- data.frame(summary(mod3)$coefficients)
-write.table(mod3_coef, 
+write.table(mod3_coef,
             file = "results/resilience_coef_table.tsv")
 
 # Plot resilience
